@@ -29,14 +29,16 @@ class EFSPlugin(clustersetup.DefaultClusterSetup):
     SETUP_CLASS = efs.EFSPlugin
     mount_point = /mnt/myefs
     fs_id = fs-1234abcd
+    fs_ip = 10.8.10.155
 
 
     """
 
-    def __init__(self, mount_point=None, fs_id=None,
+    def __init__(self, mount_point=None, fs_id=None, fs_ip=None,
                  **kwargs):
         self.mount_point = mount_point
         self.fs_id = fs_id
+        self.fs_ip = fs_ip
         super(EFSPlugin, self).__init__(**kwargs)
 
     def run(self, nodes, master, user, user_shell, volumes):
@@ -141,6 +143,12 @@ class EFSPlugin(clustersetup.DefaultClusterSetup):
         region = zone[:-1]
         name_parts = [zone, self.fs_id, 'efs', region, 'amazonaws', 'com']
         efs_dns = '.'.join(name_parts)
-        cmd = 'mount -t nfs4 -ominorversion=1 %s:/ %s' % (efs_dns,
-                                                          self.mount_point)
-        node.ssh.execute(cmd)
+
+	# this fails dns:
+        cmd1  = 'mount -t nfs4 -o minorversion=1 %s:/ %s' % (efs_dns, self.mount_point)
+
+	# just use the IP
+	cmd2 = 'mount -t nfs4 -o rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 %s:/ %s' % (self.fs_ip, self.mount_point)
+
+        #node.ssh.execute(cmd1)
+        node.ssh.execute(cmd2)
